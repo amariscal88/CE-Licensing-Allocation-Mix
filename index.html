@@ -6,15 +6,14 @@
 <title>CE Capacity Model - Strategic WFM Master</title>
 <!-- Firebase SDKs (Compat Version for Vanilla JS) -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-  /* IFRAME-SAFE NORMALIZATION */
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
   body { background: #0f1117; color: #e2e8f0; padding: 12px; font-size: 11px; line-height: 1.3; width: 100%; max-width: 100vw; overflow-x: hidden; }
   
-  /* GRID ARRANGEMENT */
   .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start; width: 100%; }
   .panel { background: #1e2330; border-radius: 8px; padding: 12px; border: 1px solid #2d3548; height: 100%; position: relative; overflow-x: auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
   .panel h2 { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 10px; border-bottom: 1px solid #2d3548; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
@@ -22,14 +21,16 @@
   .span-3 { grid-column: span 3; }
   .span-1 { grid-column: span 1; }
 
-  /* EXECUTIVE NARRATIVE INSIGHT BANNER */
   .insight-banner { background: #1a1f2e; border-left: 4px solid #6366f1; padding: 14px; border-radius: 6px; margin-bottom: 16px; border-top: 1px solid #2d3548; border-right: 1px solid #2d3548; border-bottom: 1px solid #2d3548; width: 100%; }
   .insight-banner h3 { font-size: 10px; text-transform: uppercase; color: #a5b4fc; margin-bottom: 6px; letter-spacing: 0.05em; }
   .insight-banner p { font-size: 12px; line-height: 1.5; color: #cbd5e1; }
   .insight-banner strong { color: #fff; font-weight: 700; }
 
-  /* HEADER CONTROLS */
-  .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .header-flex { 
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; 
+      position: sticky; top: 0; z-index: 1500; background: rgba(15, 17, 23, 0.95); backdrop-filter: blur(5px); 
+      margin: -12px -12px 14px -12px; padding: 12px 16px; border-bottom: 1px solid #2d3548;
+  }
   .multiplier-wrap { display: flex; background: #0f1117; padding: 2px; border-radius: 6px; border: 1px solid #2d3548; align-items: center; }
   .m-btn { border: none; background: transparent; color: #64748b; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 700; transition: 0.15s; }
   .m-btn.active { background: #334155; color: #fff; }
@@ -40,26 +41,22 @@
   .btn-horizon { background: #111827; border: 1px dashed #4b5563; color: #9ca3af; padding: 4px 6px; border-radius: 4px; font-size: 9px; cursor: pointer; transition: 0.2s; }
   .btn-horizon:hover { border-color: #6366f1; color: #f3f4f6; background: #1e293b; }
 
-  /* HIGH LEVEL METRICS SUMMARY CARDS */
   .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; width: 100%; }
   .stat-card { background: #252c3f; padding: 10px; border-radius: 6px; border: 1px solid #3d4a63; }
   .stat-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
   .stat-val { font-size: 18px; font-weight: 700; color: #f8fafc; }
   .info-icon { cursor: help; display: inline-flex; justify-content: center; align-items: center; width: 14px; height: 14px; background: #3d4a63; color: #e2e8f0; border-radius: 50%; font-size: 9px; font-weight: bold; margin-left: 4px; text-decoration: none; font-style: normal; }
 
-  /* PURE CSS TOOLTIPS */
   .tooltip-container { position: relative; display: inline-flex; align-items: center; }
   .tooltip-text { visibility: hidden; width: 220px; background-color: #1e293b; color: #f8fafc; text-align: left; border-radius: 6px; padding: 10px; border: 1px solid #475569; position: absolute; z-index: 1000; bottom: 130%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 10px; font-weight: normal; text-transform: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); pointer-events: none; }
-  .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+  .tooltip-container:hover .tooltip-text, .summary-box:hover .tooltip-text { visibility: visible; opacity: 1; }
   .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #475569 transparent transparent transparent; }
 
-  /* TABULAR DATA ARCHITECTURE */
   table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 10px; }
   th { padding: 4px 6px; color: #64748b; border-bottom: 1px solid #2d3548; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; background: #1e2330; white-space: nowrap; }
   td { padding: 3px 6px; border-bottom: 1px solid #1a2030; }
   .hover-row-trace tbody tr:hover td { background-color: #242b3d !important; }
   
-  /* MATRIX ARBITRAGE COLOR MATRIX SCHEMES */
   .matrix-btn { width: 100%; border: none; border-radius: 3px; font-size: 9px; font-weight: 700; cursor: pointer; padding: 3px 0; transition: 0.2s; }
   .matrix-btn-on { background: #22c55e; color: #0f1117; }
   .matrix-btn-on:hover { background: #16a34a; }
@@ -76,13 +73,13 @@
   
   input, select { background: #0f1117; border: 1px solid #3d4a63; color: #fff; padding: 2px; border-radius: 3px; text-align: center; font-size: 10px; }
   input[type="text"] { text-align: left; padding: 2px 4px; }
+  input[type="date"] { text-align: center; padding: 2px; color: #93c5fd; color-scheme: dark; }
   .btn-action { background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 9px; font-weight: 600; white-space: nowrap; transition: 0.2s; }
   .btn-action:hover { background: #2563eb; }
   .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-remove { color: #ef4444; background: transparent; border: none; cursor: pointer; font-weight: bold; font-size: 12px; padding: 0 4px; }
+  .btn-remove { color: #ef4444; background: transparent; border: none; cursor: pointer; font-weight: bold; font-size: 12px; padding: 0 4px; transition: 0.2s; }
   .btn-remove:hover { color: #f87171; }
 
-  /* ULTRA-COMPACT MODAL VIEWS */
   .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); padding: 10px; }
   .modal-content { background: #1e2330; padding: 16px; border-radius: 8px; border: 1px solid #3d4a63; width: 100%; max-width: 900px; max-height: 95vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
   
@@ -97,12 +94,27 @@
   .cap-cell { font-weight: 700; color: #6366f1; text-align: center; border-right: 1px solid #2d3548; background: rgba(0,0,0,0.2); }
   .chart-container { height: 150px; width: 100%; margin-bottom: 4px; }
 
-  /* SIDEBAR STYLES */
   .ce-row { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #2d3548; }
   .state-pill-toggle { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px; border-radius: 3px; font-size: 8px; cursor: pointer; margin: 1px; font-weight: 700; border: 1px solid transparent; }
   .state-on { background: #1e3a5f; color: #93c5fd; border-color: #3b82f6; }
   .state-off { background: #0f1117; color: #475569; border-color: #1a2030; }
   .del-btn { color: #ef4444; font-size: 9px; margin-left: 2px; cursor: pointer; opacity: 0.5; }
+
+  .summary-box { flex: 1; border-radius: 6px; padding: 10px; text-align: center; border: 1px solid transparent; position: relative; cursor: help; }
+  .summary-box .val { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
+  .summary-box .lbl { font-size: 8px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; }
+  
+  .box-opt { background: rgba(59,130,246,0.1); border-color: #3b82f6; }
+  .box-opt .val { color: #93c5fd; } .box-opt .lbl { color: #60a5fa; }
+  
+  .box-hlt { background: rgba(34,197,94,0.1); border-color: #22c55e; }
+  .box-hlt .val { color: #86efac; } .box-hlt .lbl { color: #4ade80; }
+  
+  .box-wrn { background: rgba(234,179,8,0.1); border-color: #eab308; }
+  .box-wrn .val { color: #fde047; } .box-wrn .lbl { color: #facc15; }
+  
+  .box-crt { background: rgba(239,68,68,0.1); border-color: #ef4444; }
+  .box-crt .val { color: #fca5a5; } .box-crt .lbl { color: #f87171; }
 </style>
 </head>
 <body>
@@ -112,23 +124,22 @@
   
   <div class="multiplier-wrap">
     <span style="font-size:9px; color:#94a3b8; font-weight:700; padding: 0 8px;">VOLUME BUMP:</span>
-    <button class="m-btn active" id="m-base" onclick="setVolMultiplier(1.0, this)">BASE</button>
-    <button class="m-btn" id="m-5" onclick="setVolMultiplier(1.05, this)">+5%</button>
-    <button class="m-btn" id="m-10" onclick="setVolMultiplier(1.10, this)">+10%</button>
+    <button class="m-btn active" id="m-base" onclick="window.setVolMultiplier(1.0, this)">BASE</button>
+    <button class="m-btn" id="m-5" onclick="window.setVolMultiplier(1.05, this)">+5%</button>
+    <button class="m-btn" id="m-10" onclick="window.setVolMultiplier(1.10, this)">+10%</button>
   </div>
 
   <div class="month-bar">
-    <button class="btn-horizon" style="margin-right: 6px; font-weight: bold; color: #a5b4fc; border-color: #6366f1;" onclick="openMonthManager()">📅 Manage Months</button>
+    <button class="btn-horizon" style="margin-right: 6px; font-weight: bold; color: #a5b4fc; border-color: #6366f1;" onclick="window.openMonthManager()">📅 Manage Months</button>
     <div id="month-tabs" style="display: inline-flex; gap: 2px; margin: 0 4px;"></div>
   </div>
   
   <div style="display: flex; gap: 8px;">
     <button class="btn-action" style="background: #1e293b; color: #93c5fd; border: 1px solid #3b82f6;" onclick="document.getElementById('summary-modal').style.display='flex'">ℹ️ SUMMARY</button>
-    <button class="btn-action" onclick="toggleModalEnvelope('settings-modal')">⚙️ GLOBAL PARAMETERS MANAGER</button>
+    <button class="btn-action" onclick="window.toggleModalEnvelope('settings-modal')">⚙️ GLOBAL PARAMETERS MANAGER</button>
   </div>
 </div>
 
-<!-- REAL-TIME NARRATIVE ENGINE VIEWPORT -->
 <div class="insight-banner" id="executive-insight-banner"></div>
 
 <div class="stat-grid" id="top-stats-container"></div>
@@ -142,7 +153,10 @@
 
   <!-- STATE ALLOCATION GRID -->
   <div class="panel full-width">
-    <h2 id="matrix-title-label">State Allocation & Licensure Grid</h2>
+    <h2 id="matrix-title-label">
+      <span>State Allocation & Licensure Grid</span>
+      <button class="btn-action" style="padding: 2px 8px; font-size: 8px; background: #475569; border: 1px solid #64748b;" onclick="window.copyMatrixToClipboard()" title="Copies grid to your clipboard for instant Google Sheets pasting">📋 COPY TO SHEETS</button>
+    </h2>
     <p style="font-size: 9px; color: #94a3b8; margin-bottom: 8px;">The grid below displays all evaluators. Dark cells mean the CE is unlicensed in that state. Click any <span style="background:#3d4a63; color:#f1f5f9; padding:1px 3px; border-radius:3px;">OFF</span> button to instantly route capacity.</p>
     <div style="overflow-x: auto; width: 100%; max-height: 400px; overflow-y: auto;">
       <table class="hover-row-trace" id="matrix-licensure-table" style="min-width: 1200px;">
@@ -157,16 +171,26 @@
 
   <!-- PROFILE MANAGER -->
   <div class="panel span-1">
-    <h2 id="mix-title" style="align-items: center; display: flex;">
+    <h2 id="mix-title" style="align-items: center; display: flex; justify-content: space-between;">
       <span>Profile Manager</span>
-      <button class="btn-action" style="padding: 2px 6px; font-size: 8px; background: #6366f1;" onclick="addAllStatesToAllProviders()" title="Adds all active tracking states to EVERY provider's profile">+ ALL TO ALL</button>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn-action" style="padding: 2px 6px; font-size: 8px; background: #6366f1;" onclick="window.addAllStatesToAllProviders()" title="Adds all active tracking states to EVERY provider's profile">+ ALL</button>
+        <button class="btn-action" style="padding: 2px 6px; font-size: 8px; background: #10b981;" onclick="window.syncLicensureFromSheets(false)" title="Sync Licensure Profiles from Google Sheets">🔄 SYNC LICENSURE</button>
+      </div>
     </h2>
     <div id="ce-controls" style="max-height: 380px; overflow-y: auto; padding-right: 5px;"></div>
   </div>
 
   <!-- HEATMAP -->
   <div class="panel span-3">
-    <h2 id="heat-title">State Weighted Distribution Balance</h2>
+    <h2 id="heat-title" style="align-items: center; display: flex; justify-content: space-between;">
+      <span>State Weighted Distribution Balance</span>
+      <div style="display:flex; gap:6px;">
+        <button class="btn-action" style="background: #8b5cf6;" onclick="window.runAutoOptimize(false)" title="Clears and mathematically recalculates optimal alignments for currently selected month.">✨ OPTIMIZE MONTH</button>
+        <button class="btn-action" style="background: #6d28d9;" onclick="if(confirm('This will wipe all manual toggles and generate mathematically optimized capacity assignments for EVERY month tracking in your horizon simultaneously. Proceed?')) window.runAutoOptimize(true)" title="Generates optimums for ALL active months simultaneously">✨ OPTIMIZE ALL</button>
+      </div>
+    </h2>
+    <div id="heatmap-summary" style="display: flex; gap: 8px; margin-bottom: 12px; margin-top: 6px;"></div>
     <div style="overflow-y: auto; max-height: 380px;">
         <table>
         <thead style="position: sticky; top: 0; background: #1e2330; z-index: 10;">
@@ -186,17 +210,17 @@
 
   <!-- DYNAMIC ROSTER AND PTO ALLOCATION LEDGER -->
   <div class="panel full-width">
-    <h2>Rolling PTO & Capacity Management Ledger</h2>
+    <h2>Rolling PTO, Quota & Capacity Management Ledger</h2>
     
     <div style="display: flex; justify-content: space-between; align-items: center; background: #161b26; padding: 8px 12px; border-radius: 6px; border: 1px solid #2d3548; margin-bottom: 12px;">
       <div style="display: flex; gap: 8px; align-items: center;">
           <span style="font-weight: 600; color: #a5b4fc; font-size: 10px;">Roster Onboarding:</span>
           <input type="text" id="new-clinician-name" placeholder="Enter full name of incoming Evaluator" style="width: 220px;">
-          <button class="btn-action" onclick="addNewClinicianToRoster()">+ Provision Evaluator Seat</button>
+          <button class="btn-action" onclick="window.addNewClinicianToRoster()">+ Provision Evaluator Seat</button>
       </div>
       <div style="display: flex; gap: 8px;">
-          <button class="btn-action" id="undo-sync-btn" style="background:#f59e0b; color:#78350f; display:none;" onclick="undoPtoSync()">⏪ UNDO SYNC</button>
-          <button class="btn-action" id="sync-pto-btn" style="background:#10b981; color:#064e3b;" onclick="syncPtoFromGoogleSheets(false)">☁️ CLOUD SYNC PTO FROM SHEETS</button>
+          <button class="btn-action" id="undo-sync-btn" style="background:#f59e0b; color:#78350f; display:none;" onclick="window.undoPtoSync()">⏪ UNDO SYNC</button>
+          <button class="btn-action" id="sync-pto-btn" style="background:#10b981; color:#064e3b;" onclick="window.syncPtoFromGoogleSheets(false)">☁️ CLOUD SYNC PTO FROM SHEETS</button>
       </div>
     </div>
 
@@ -205,6 +229,25 @@
         <thead id="pto-ledger-head" style="position: sticky; top: 0; z-index: 10; background: #1e2330;"></thead>
         <tbody id="pto-ledger-body"></tbody>
         <tfoot id="pto-ledger-foot" style="position: sticky; bottom: 0; z-index: 10;"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- WEEKLY CAPACITY VOLATILITY -->
+  <div class="panel full-width">
+    <h2 style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Weekly Evaluation Volatility & Capacity</span>
+        <button class="btn-action" style="padding: 4px 8px; font-size: 8px; background: #6366f1;" onclick="window.saveWeeklyDates()">💾 SAVE DATES</button>
+    </h2>
+    <p style="font-size: 9px; color: #94a3b8; margin-bottom: 8px;">Define the strict work weeks for the active month below. The engine calculates precise weekly capacity by reading exact PTO dates synced from Google Sheets.</p>
+    
+    <div id="weekly-dates-container" style="display:flex; gap:10px; margin-bottom:12px; flex-wrap: wrap;"></div>
+    
+    <div style="overflow-x: auto; width: 100%; max-height: 400px; overflow-y: auto;">
+      <table class="hover-row-trace" style="min-width: 800px;">
+        <thead id="weekly-cap-head" style="position: sticky; top: 0; background: #1e2330; z-index: 10;"></thead>
+        <tbody id="weekly-cap-body"></tbody>
+        <tfoot id="weekly-cap-foot" style="position: sticky; bottom: 0; z-index: 10;"></tfoot>
       </table>
     </div>
   </div>
@@ -222,7 +265,7 @@
     <div style="display:flex; gap: 8px; margin-bottom: 16px; align-items: center; background: #161b26; padding: 12px; border-radius: 6px; border: 1px solid #2d3548;">
         <span style="font-size: 11px; color: #94a3b8; font-weight: bold;">+ Add New Month:</span>
         <input type="text" id="new-month-input" placeholder="e.g. June, Q3, etc." style="flex:1; padding: 6px;">
-        <button class="btn-action" style="background: #10b981;" onclick="addNewSpecificMonth()">ADD TO TIMELINE</button>
+        <button class="btn-action" style="background: #10b981;" onclick="window.addNewSpecificMonth()">ADD TO TIMELINE</button>
     </div>
 
     <!-- ACTIVE TIMELINE -->
@@ -249,7 +292,7 @@
   <div class="modal-content">
     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #2d3548; padding-bottom: 10px;">
         <h2 style="margin:0; border:none; color:#fff; font-size:13px;">Global Base Targets & Projections</h2>
-        <button class="btn-action" onclick="saveGlobalModalParams()">COMMIT PARAMETERS & RECALCULATE</button>
+        <button class="btn-action" onclick="window.saveGlobalModalParams()">COMMIT PARAMETERS & RECALCULATE</button>
     </div>
 
     <!-- COMPACT WORKING DAYS SECTION -->
@@ -264,7 +307,7 @@
     <div style="margin-bottom: 12px; background: #161b26; border: 1px solid #2d3548; border-radius: 6px; padding: 8px;">
         <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px;">
             <h2 style="margin:0; font-size: 9px; color: #94a3b8; text-transform: uppercase;">Active State Territories (Order & Additions)</h2>
-            <button class="btn-action" onclick="updateMasterStateList()" style="padding: 2px 6px; font-size: 8px; background: #6366f1;">APPLY STATES</button>
+            <button class="btn-action" onclick="window.updateMasterStateList()" style="padding: 2px 6px; font-size: 8px; background: #6366f1;">APPLY STATES</button>
         </div>
         <p style="font-size: 8px; color: #64748b; margin-bottom: 6px;">Enter state codes separated by commas to change tracking order or add new states. Click Apply to update the grid below.</p>
         <textarea id="modal-state-list-input" style="width: 100%; background: #0f1117; border: 1px solid #3d4a63; color: #fff; padding: 6px; font-size: 10px; border-radius: 4px; resize: vertical; min-height: 35px;"></textarea>
@@ -282,7 +325,7 @@
     </div>
 
     <div style="margin-top: 12px; text-align: right;">
-        <button class="btn-action" onclick="if(confirm('Wipe all local storage?')) triggerFactoryResetWfm()" style="background:transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; font-size: 9px;">⚠️ INITIALIZE HARD RESET</button>
+        <button class="btn-action" onclick="if(confirm('Wipe all local storage?')) window.triggerFactoryResetWfm()" style="background:transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; font-size: 9px;">⚠️ INITIALIZE HARD RESET</button>
     </div>
   </div>
 </div>
@@ -308,9 +351,31 @@
 </div>
 
 <script>
+// --- CORE SYSTEM STATE MUTABLES ---
+let ACTIVE_HORIZON_TIMELINE = [];
+let GLOBAL_PROJECTIONS_LEDGER = {};
+let CLINICAL_EVALUATORS_ROSTER = {};
+let volGrowthMultiplier = 1.0;
+let activeSelectedMonthIdx = 0;
+let operationalChartInstance = null;
+let MASTER_STATE_LIST = [];
+let ROSTER_ORDER = [];
+
+// --- ARCHIVE VAULT STATE ---
+let ARCHIVED_TIMELINE = [];
+let ARCHIVED_LEDGER = {};
+let ARCHIVED_ROSTER = {};
+
+let firebaseDbRef = null;
+let isFirebaseSynced = false;
+let localLastUpdated = parseInt(localStorage.getItem('wfm_last_updated')) || 0;
+
+// --- CRASH PROOF UTILITIES ---
+window.fmt = function(num) {
+    return Math.round(num || 0).toLocaleString();
+}
+
 // --- FIREBASE CONFIGURATION ---
-// Obfuscated API key to prevent GitHub secret scanner false positives
-// Note: Firebase web API keys are safe to be public, but GitHub flags them anyway.
 const firebaseConfig = {
   apiKey: "AIzaSyBU1tPMT" + "jYtRSbmlttGfLKebl7gnwLzgBw",
   authDomain: "ce-wfm-suite.firebaseapp.com",
@@ -321,69 +386,10 @@ const firebaseConfig = {
   appId: "1:590100182080:web:b52ae564a6aa4377709ba5"
 };
 
-let firebaseDbRef = null;
-
-function initFirebase() {
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    firebaseDbRef = firebase.database().ref('/Licensing_Capacity_Mix');
-}
-
-function syncWithFirebase() {
-    if (!firebaseDbRef) return;
-    
-    firebaseDbRef.once('value').then((snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            // Cloud has data, overwrite local optimistic state
-            ACTIVE_HORIZON_TIMELINE = data.timeline || [];
-            GLOBAL_PROJECTIONS_LEDGER = data.ledger || {};
-            CLINICAL_EVALUATORS_ROSTER = data.roster || {};
-            volGrowthMultiplier = data.multiplier || 1.0;
-            MASTER_STATE_LIST = data.stateList || [];
-            ARCHIVED_TIMELINE = data.archiveTime || [];
-            ARCHIVED_LEDGER = data.archiveLedg || {};
-            ARCHIVED_ROSTER = data.archiveRost || {};
-            
-            // Save to localStorage so next boot is also fast
-            saveToLocalOnly();
-            
-            // Refresh UI
-            activeSelectedMonthIdx = 0; 
-            buildTimelineControls();
-            recalculateDashboardMetrics();
-            console.log("State synced FROM Firebase seamlessly.");
-        } else {
-            // Firebase is empty, seed it with the current local state
-            pushToFirebase();
-            console.log("Firebase empty. Seeded WITH local data.");
-        }
-    }).catch((error) => {
-        console.error("Firebase Background Sync Error:", error);
-    });
-}
-
-function pushToFirebase() {
-    if (!firebaseDbRef) return;
-    firebaseDbRef.set({
-        timeline: ACTIVE_HORIZON_TIMELINE,
-        ledger: GLOBAL_PROJECTIONS_LEDGER,
-        roster: CLINICAL_EVALUATORS_ROSTER,
-        multiplier: volGrowthMultiplier,
-        stateList: MASTER_STATE_LIST,
-        archiveTime: ARCHIVED_TIMELINE,
-        archiveLedg: ARCHIVED_LEDGER,
-        archiveRost: ARCHIVED_ROSTER
-    }).catch(err => console.error("Firebase Push Failed:", err));
-}
-
-// --- CRASH PROOF UTILITIES ---
-const fmt = (num) => Math.round(num || 0).toLocaleString();
-
 // --- CORE CONSTANTS & BASELINES ---
 const ALL_KNOWN_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DEFAULT_STATE_LIST = ["MA","NJ","NH","CT","NY","PA","RI","ME","VA","OH","TX","IL","DC","FL","NC","GA","SC","MD","DE","WV","MO","WI","NV","AZ","CO","NM","MT","OK"];
+// Appended VT to baselines natively
+const DEFAULT_STATE_LIST = ["MA","NJ","NH","CT","NY","PA","RI","ME","VA","OH","TX","IL","DC","FL","NC","GA","SC","MD","DE","WV","MO","WI","NV","AZ","CO","NM","MT","OK","VT"];
 
 const BASELINE_WD_MAP = { "May":20, "June":21, "July":21, "August":21, "September":21, "October":21, "November":18, "December":22 };
 const BASELINE_TARGETS_MAP = { "May":327, "June":348, "July":349, "August":370, "September":403, "October":466, "November":528, "December":529 };
@@ -397,7 +403,7 @@ const BASELINE_DEMAND_MATRIX = {
   "GA":[9,13,16,17,16,17,18,19],"SC":[2,5,4,5,4,5,5,5],"MD":[0,0,7,11,13,14,13,14],
   "DE":[0,0,1,2,2,2,2,2],"WV":[0,0,1,1,1,1,1,1],"MO":[0,0,0,3,4,6,7,6],
   "WI":[0,0,0,5,6,10,12,12],"NV":[0,0,0,0,5,6,11,11],"AZ":[0,0,0,0,5,9,13,14],
-  "CO":[0,0,0,0,5,9,13,14],"NM":[0,0,0,0,0,2,2,4],"MT":[0,0,0,0,0,2,2,2],"OK":[0,0,0,0,0,4,5,6]
+  "CO":[0,0,0,0,5,9,13,14],"NM":[0,0,0,0,0,2,2,4],"MT":[0,0,0,0,0,2,2,2],"OK":[0,0,0,0,0,4,5,6], "VT":[0,0,0,0,0,0,0,0]
 };
 
 const BASELINE_PTO_MAP = {
@@ -426,21 +432,97 @@ const BASELINE_CE_CONFIG = {
   "Hayley Feuchs": { q: 4, profile: ["NY","DC","NV","AZ"] }
 };
 
-// --- CORE SYSTEM STATE MUTABLES ---
-let ACTIVE_HORIZON_TIMELINE = [];
-let GLOBAL_PROJECTIONS_LEDGER = {};
-let CLINICAL_EVALUATORS_ROSTER = {};
-let volGrowthMultiplier = 1.0;
-let activeSelectedMonthIdx = 0;
-let operationalChartInstance = null;
-let MASTER_STATE_LIST = [];
+// --- STREAMING_CHUNK:Firebase Sync Logic... ---
+function initFirebase() {
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            firebaseDbRef = firebase.database().ref('/Licensing_Capacity_Mix');
+            if (!isFirebaseSynced) syncWithFirebase();
+        } else {
+            firebase.auth().signInAnonymously().catch(err => {
+                console.warn("Anonymous Auth failed. Ensure it is enabled in your Firebase Console if rules require it. Attempting unauthenticated access...", err.message);
+                firebaseDbRef = firebase.database().ref('/Licensing_Capacity_Mix');
+                if (!isFirebaseSynced) syncWithFirebase();
+            });
+        }
+    });
+}
 
-// --- NEW ARCHIVE VAULT STATE ---
-let ARCHIVED_TIMELINE = [];
-let ARCHIVED_LEDGER = {};
-let ARCHIVED_ROSTER = {};
+function syncWithFirebase() {
+    if (!firebaseDbRef) return;
+    
+    firebaseDbRef.once('value').then((snapshot) => {
+        isFirebaseSynced = true;
+        const data = snapshot.val();
+        if (data) {
+            const cloudLastUpdated = data.lastUpdated || 0;
+            const localTime = parseInt(localStorage.getItem('wfm_last_updated')) || 0;
+            
+            if (cloudLastUpdated > localTime) {
+                ACTIVE_HORIZON_TIMELINE = data.timeline || [];
+                GLOBAL_PROJECTIONS_LEDGER = data.ledger || {};
+                CLINICAL_EVALUATORS_ROSTER = data.roster || {};
+                volGrowthMultiplier = data.multiplier || 1.0;
+                MASTER_STATE_LIST = data.stateList || [];
+                ROSTER_ORDER = data.rosterOrder || Object.keys(CLINICAL_EVALUATORS_ROSTER);
+                ARCHIVED_TIMELINE = data.archiveTime || [];
+                ARCHIVED_LEDGER = data.archiveLedg || {};
+                ARCHIVED_ROSTER = data.archiveRost || {};
+                
+                saveToLocalOnly();
+                localStorage.setItem('wfm_last_updated', cloudLastUpdated);
+                localLastUpdated = cloudLastUpdated;
+                
+                activeSelectedMonthIdx = 0; 
+                buildTimelineControls();
+                recalculateDashboardMetrics();
+                console.log("State pulled FROM Firebase seamlessly (Cloud is newer).");
+            } else if (localTime > cloudLastUpdated) {
+                pushToFirebase();
+                console.log("State pushed TO Firebase seamlessly (Local is newer).");
+            } else {
+                console.log("Local and Cloud states are perfectly synced.");
+            }
+        } else {
+            pushToFirebase();
+            console.log("Firebase empty. Seeded WITH local data.");
+        }
+    }).catch((error) => {
+        if (error.code === 'PERMISSION_DENIED') {
+            console.warn("⚠️ FIREBASE PERMISSION DENIED: Your Firebase Realtime Database rules are blocking access. Continuing in Local-Only mode.");
+        } else {
+            console.error("Firebase Background Sync Error:", error);
+        }
+    });
+}
 
-// --- CRASH-PROOF STRUCTURAL HYDRATION ENGINE ---
+function pushToFirebase() {
+    if (!firebaseDbRef || !isFirebaseSynced) return; 
+    firebaseDbRef.set({
+        timeline: ACTIVE_HORIZON_TIMELINE,
+        ledger: GLOBAL_PROJECTIONS_LEDGER,
+        roster: CLINICAL_EVALUATORS_ROSTER,
+        multiplier: volGrowthMultiplier,
+        stateList: MASTER_STATE_LIST,
+        rosterOrder: ROSTER_ORDER,
+        archiveTime: ARCHIVED_TIMELINE,
+        archiveLedg: ARCHIVED_LEDGER,
+        archiveRost: ARCHIVED_ROSTER,
+        lastUpdated: localLastUpdated
+    }).catch(err => {
+        if (err.code === 'PERMISSION_DENIED') {
+            console.warn("⚠️ FIREBASE PUSH BLOCKED: Check your Firebase Database Rules.");
+        } else {
+            console.error("Firebase Push Failed:", err);
+        }
+    });
+}
+
+// --- STREAMING_CHUNK:Hydration Data Engine... ---
 function bootstrapDataEngine() {
   try {
     ACTIVE_HORIZON_TIMELINE = JSON.parse(localStorage.getItem('wfm_timeline_v21')) || ["May","June","July","August","September","October","November","December"];
@@ -448,8 +530,10 @@ function bootstrapDataEngine() {
     CLINICAL_EVALUATORS_ROSTER = JSON.parse(localStorage.getItem('wfm_roster_v21')) || {};
     volGrowthMultiplier = parseFloat(localStorage.getItem('wfm_mult_v21')) || 1.0;
     MASTER_STATE_LIST = JSON.parse(localStorage.getItem('wfm_state_list_v21')) || [...DEFAULT_STATE_LIST];
+    
+    // Inject VT for older environments if missing
+    if(!MASTER_STATE_LIST.includes("VT")) MASTER_STATE_LIST.push("VT");
 
-    // Load Archives
     ARCHIVED_TIMELINE = JSON.parse(localStorage.getItem('wfm_archive_time_v21')) || [];
     ARCHIVED_LEDGER = JSON.parse(localStorage.getItem('wfm_archive_ledg_v21')) || {};
     ARCHIVED_ROSTER = JSON.parse(localStorage.getItem('wfm_archive_rost_v21')) || {};
@@ -459,19 +543,24 @@ function bootstrapDataEngine() {
         GLOBAL_PROJECTIONS_LEDGER[m] = {
           workingDays: BASELINE_WD_MAP[m] !== undefined ? BASELINE_WD_MAP[m] : 21,
           enrollTarget: BASELINE_TARGETS_MAP[m] !== undefined ? BASELINE_TARGETS_MAP[m] : 400,
-          stateDemand: {}
+          stateDemand: {},
+          weeks: [] // Initialize empty weeks array
         };
-        MASTER_STATE_LIST.forEach(s => {
+      }
+      if (!GLOBAL_PROJECTIONS_LEDGER[m].weeks) GLOBAL_PROJECTIONS_LEDGER[m].weeks = [];
+      MASTER_STATE_LIST.forEach(s => {
+        if(GLOBAL_PROJECTIONS_LEDGER[m].stateDemand[s] === undefined) {
           let baselineArray = BASELINE_DEMAND_MATRIX[s];
           GLOBAL_PROJECTIONS_LEDGER[m].stateDemand[s] = (baselineArray && baselineArray[idx] !== undefined) ? baselineArray[idx] : 0;
-        });
-      }
+        }
+      });
     });
 
     if (Object.keys(CLINICAL_EVALUATORS_ROSTER).length === 0) {
       Object.keys(BASELINE_CE_CONFIG).forEach(name => {
         CLINICAL_EVALUATORS_ROSTER[name] = {
-          quota: BASELINE_CE_CONFIG[name].q,
+          quotaMap: {},
+          exactPto: {}, // Storage for strict weekly date checking
           profile: [...BASELINE_CE_CONFIG[name].profile],
           ptoMap: {},
           monthlyToggles: {}
@@ -480,23 +569,46 @@ function bootstrapDataEngine() {
           let basePtoArray = BASELINE_PTO_MAP[name];
           CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m] = (basePtoArray && basePtoArray[idx] !== undefined) ? basePtoArray[idx] : 0;
           CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = [...BASELINE_CE_CONFIG[name].profile];
+          CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m] = BASELINE_CE_CONFIG[name].q;
         });
       });
     } else {
       Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
-        if (!CLINICAL_EVALUATORS_ROSTER[name].ptoMap) CLINICAL_EVALUATORS_ROSTER[name].ptoMap = {};
-        if (!CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles) CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles = {};
-        if (!CLINICAL_EVALUATORS_ROSTER[name].profile) CLINICAL_EVALUATORS_ROSTER[name].profile = [];
+        let r = CLINICAL_EVALUATORS_ROSTER[name];
+        if (!r.ptoMap) r.ptoMap = {};
+        if (!r.monthlyToggles) r.monthlyToggles = {};
+        if (!r.profile) r.profile = [];
+        if (!r.exactPto) r.exactPto = {};
+        
+        // Migration from global static quota to monthly quota map
+        if (!r.quotaMap) {
+            r.quotaMap = {};
+            ACTIVE_HORIZON_TIMELINE.forEach(m => r.quotaMap[m] = r.quota || 4);
+            delete r.quota;
+        }
         
         ACTIVE_HORIZON_TIMELINE.forEach(m => {
-          if (CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m] === undefined) CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m] = 0;
-          if (!CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m]) {
-            CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = [...CLINICAL_EVALUATORS_ROSTER[name].profile];
+          if (r.ptoMap[m] === undefined) r.ptoMap[m] = 0;
+          if (r.quotaMap[m] === undefined) r.quotaMap[m] = 4;
+          if (!r.monthlyToggles[m]) {
+            r.monthlyToggles[m] = [...r.profile];
           }
         });
       });
     }
-    // Only local save during boot
+
+    // Set ROSTER ORDER properly
+    if (!localStorage.getItem('wfm_roster_order_v21')) {
+        ROSTER_ORDER = Object.keys(CLINICAL_EVALUATORS_ROSTER);
+    } else {
+        ROSTER_ORDER = JSON.parse(localStorage.getItem('wfm_roster_order_v21'));
+        // Sync order array with actual roster keys
+        Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(k => {
+           if (!ROSTER_ORDER.includes(k)) ROSTER_ORDER.push(k);
+        });
+        ROSTER_ORDER = ROSTER_ORDER.filter(k => CLINICAL_EVALUATORS_ROSTER[k]);
+    }
+
     saveToLocalOnly();
   } catch (err) {
     console.error("Hydration Engine Intercept Failure", err);
@@ -504,22 +616,23 @@ function bootstrapDataEngine() {
   }
 }
 
-// Split save into Local-Only and Full Sync
 function saveToLocalOnly() {
   localStorage.setItem('wfm_timeline_v21', JSON.stringify(ACTIVE_HORIZON_TIMELINE));
   localStorage.setItem('wfm_ledger_v21', JSON.stringify(GLOBAL_PROJECTIONS_LEDGER));
   localStorage.setItem('wfm_roster_v21', JSON.stringify(CLINICAL_EVALUATORS_ROSTER));
   localStorage.setItem('wfm_mult_v21', volGrowthMultiplier.toString());
   localStorage.setItem('wfm_state_list_v21', JSON.stringify(MASTER_STATE_LIST));
-  
+  localStorage.setItem('wfm_roster_order_v21', JSON.stringify(ROSTER_ORDER));
   localStorage.setItem('wfm_archive_time_v21', JSON.stringify(ARCHIVED_TIMELINE));
   localStorage.setItem('wfm_archive_ledg_v21', JSON.stringify(ARCHIVED_LEDGER));
   localStorage.setItem('wfm_archive_rost_v21', JSON.stringify(ARCHIVED_ROSTER));
 }
 
 function saveStateToStorage() {
+  localLastUpdated = Date.now();
+  localStorage.setItem('wfm_last_updated', localLastUpdated);
   saveToLocalOnly();
-  pushToFirebase(); // Background sync
+  pushToFirebase();
 }
 
 function triggerFactoryResetWfm() {
@@ -527,7 +640,131 @@ function triggerFactoryResetWfm() {
   location.reload();
 }
 
-// --- DYNAMIC MONTH MANAGER & ARCHIVE ENGINE ---
+// --- STREAMING_CHUNK:AI Auto Optimize Engine... ---
+function runAutoOptimize(allMonths) {
+    let monthsToProcess = allMonths ? ACTIVE_HORIZON_TIMELINE : [ACTIVE_HORIZON_TIMELINE[activeSelectedMonthIdx]];
+    
+    monthsToProcess.forEach(m => {
+        let wd = GLOBAL_PROJECTIONS_LEDGER[m].workingDays;
+        let demands = {};
+        MASTER_STATE_LIST.forEach(s => {
+            demands[s] = Math.round((GLOBAL_PROJECTIONS_LEDGER[m].stateDemand[s] || 0) * volGrowthMultiplier);
+        });
+
+        let ces = Object.keys(CLINICAL_EVALUATORS_ROSTER).map(name => {
+            let r = CLINICAL_EVALUATORS_ROSTER[name];
+            let pto = parseFloat(r.ptoMap[m]) || 0;
+            let cap = Math.max(0, (wd - pto) * (parseFloat(r.quotaMap[m]) || 0));
+            return { name: name, cap: cap, profile: r.profile, active: [] }; 
+        });
+
+        MASTER_STATE_LIST.forEach(s => {
+            if (demands[s] <= 0) return; 
+            let available = ces.filter(ce => ce.profile.includes(s)).sort((a,b) => b.cap - a.cap);
+            for(let i=0; i < Math.min(2, available.length); i++) {
+                available[i].active.push(s);
+            }
+        });
+
+        const getCoverage = (state, simCEs) => {
+            if(demands[state] === 0) return 100;
+            let supply = 0;
+            simCEs.forEach(ce => {
+                if(ce.active.includes(state)) {
+                    let totalDenom = ce.active.reduce((sum, st) => sum + demands[st], 0);
+                    supply += (ce.cap * (demands[state] / totalDenom));
+                }
+            });
+            return (supply / demands[state]) * 100;
+        };
+
+        let sortedStatesByDemand = [...MASTER_STATE_LIST].filter(s => demands[s] > 0).sort((a,b) => demands[b] - demands[a]);
+        let top5States = sortedStatesByDemand.slice(0, 5);
+
+        let targetCoverage = 90;
+        let madeChanges = true;
+        let circuitBreaker = 25; 
+        
+        while(madeChanges && circuitBreaker > 0) {
+            madeChanges = false;
+            circuitBreaker--;
+
+            for(let s of sortedStatesByDemand) {
+                let currentCov = getCoverage(s, ces);
+                if (currentCov >= targetCoverage) continue; 
+
+                let bestCE = null;
+                let bestBoost = 0;
+
+                for(let ce of ces) {
+                    if (ce.profile.includes(s) && !ce.active.includes(s)) {
+                        ce.active.push(s);
+                        let newCov = getCoverage(s, ces);
+                        let boost = newCov - currentCov;
+                        
+                        let safeMove = true;
+                        for(let t5 of top5States) {
+                            if (t5 === s) continue; 
+                            if (ce.active.includes(t5)) { 
+                                let t5OldCov = getCoverage(t5, ces.map(c => c.name === ce.name ? {...c, active: c.active.filter(x => x!==s)} : c));
+                                let t5NewCov = getCoverage(t5, ces);
+                                if (t5OldCov >= targetCoverage && t5NewCov < targetCoverage) safeMove = false;
+                                else if (t5OldCov >= 80 && t5NewCov < 80) safeMove = false;
+                            }
+                        }
+
+                        if (safeMove && boost > bestBoost) {
+                            bestBoost = boost;
+                            bestCE = ce;
+                        }
+                        ce.active.pop(); 
+                    }
+                }
+
+                if (bestCE) {
+                    bestCE.active.push(s);
+                    madeChanges = true;
+                }
+            }
+        }
+
+        ces.forEach(ce => {
+            CLINICAL_EVALUATORS_ROSTER[ce.name].monthlyToggles[m] = [...ce.active];
+        });
+    });
+
+    saveStateToStorage();
+    recalculateDashboardMetrics();
+}
+
+function copyMatrixToClipboard() {
+    let activeMonth = ACTIVE_HORIZON_TIMELINE[activeSelectedMonthIdx];
+    let tsv = "CE Name\t" + MASTER_STATE_LIST.join("\t") + "\n";
+    
+    ROSTER_ORDER.forEach(name => {
+        let r = CLINICAL_EVALUATORS_ROSTER[name];
+        let mix = r.monthlyToggles[activeMonth] || [];
+        let row = [name];
+        MASTER_STATE_LIST.forEach(s => {
+            row.push(mix.includes(s) ? "Yes" : "");
+        });
+        tsv += row.join("\t") + "\n";
+    });
+
+    let textarea = document.createElement("textarea");
+    textarea.value = tsv;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand("copy");
+        alert("State Matrix copied to clipboard successfully! You can now paste directly into your Google Sheet.");
+    } catch (err) {
+        alert("Failed to copy automatically.");
+    }
+    document.body.removeChild(textarea);
+}
+
+// --- STREAMING_CHUNK:Dynamic Month Management... ---
 function openMonthManager() {
     renderMonthManagerUI();
     document.getElementById('month-manager-modal').style.display = 'flex';
@@ -538,13 +775,13 @@ function renderMonthManagerUI() {
     tbody.innerHTML = ACTIVE_HORIZON_TIMELINE.map((m, i) => `
         <tr>
             <td style="text-align:center;">
-                <button style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:12px; padding:2px;" onclick="moveMonth(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3"' : ''}>▲</button>
-                <button style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:12px; padding:2px;" onclick="moveMonth(${i}, 1)" ${i === ACTIVE_HORIZON_TIMELINE.length - 1 ? 'disabled style="opacity:0.3"' : ''}>▼</button>
+                <button style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:12px; padding:2px;" onclick="window.moveMonth(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3"' : ''}>▲</button>
+                <button style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:12px; padding:2px;" onclick="window.moveMonth(${i}, 1)" ${i === ACTIVE_HORIZON_TIMELINE.length - 1 ? 'disabled style="opacity:0.3"' : ''}>▼</button>
             </td>
             <td style="font-weight:bold; color:#f1f5f9;">${m.split('_')[0]}</td>
             <td style="text-align:right;">
-                <button class="btn-action" style="padding: 4px 8px; font-size: 9px; background: #f59e0b;" onclick="archiveSpecificMonth('${m}')">ARCHIVE</button>
-                <button class="btn-action" style="padding: 4px 8px; font-size: 9px; background: #ef4444; margin-left: 4px;" onclick="deleteSpecificMonth('${m}')">DELETE</button>
+                <button class="btn-action" style="padding: 4px 8px; font-size: 9px; background: #f59e0b;" onclick="window.archiveSpecificMonth('${m}')">ARCHIVE</button>
+                <button class="btn-action" style="padding: 4px 8px; font-size: 9px; background: #ef4444; margin-left: 4px;" onclick="window.deleteSpecificMonth('${m}')">DELETE</button>
             </td>
         </tr>
     `).join('');
@@ -556,8 +793,8 @@ function renderMonthManagerUI() {
         archiveContainer.innerHTML = ARCHIVED_TIMELINE.map(m => `
             <div style="background:#0f1117; border:1px solid #3d4a63; padding:6px 10px; border-radius:4px; display:flex; align-items:center; gap:8px;">
                 <span style="font-size:10px; color:#94a3b8;">${m.split('_')[0]}</span>
-                <button class="btn-action" style="background:#059669; padding:2px 6px; font-size:8px;" onclick="restoreArchivedMonth('${m}')">RESTORE</button>
-                <button style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-weight:bold; font-size:14px; margin-left:4px;" title="Permanently Delete" onclick="deleteArchivedMonth('${m}')">×</button>
+                <button class="btn-action" style="background:#059669; padding:2px 6px; font-size:8px;" onclick="window.restoreArchivedMonth('${m}')">RESTORE</button>
+                <button style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-weight:bold; font-size:14px; margin-left:4px;" title="Permanently Delete" onclick="window.deleteArchivedMonth('${m}')">×</button>
             </div>
         `).join('');
     }
@@ -569,7 +806,6 @@ function moveMonth(idx, dir) {
     ACTIVE_HORIZON_TIMELINE[idx] = ACTIVE_HORIZON_TIMELINE[idx + dir];
     ACTIVE_HORIZON_TIMELINE[idx + dir] = temp;
     
-    // Ensure activeSelectedMonthIdx tracks the moved item to prevent weird UI jumps
     if (activeSelectedMonthIdx === idx) activeSelectedMonthIdx = idx + dir;
     else if (activeSelectedMonthIdx === idx + dir) activeSelectedMonthIdx = idx;
 
@@ -590,11 +826,12 @@ function addNewSpecificMonth() {
     }
 
     ACTIVE_HORIZON_TIMELINE.push(newM);
-    GLOBAL_PROJECTIONS_LEDGER[newM] = { workingDays: 21, enrollTarget: 400, stateDemand: {} };
+    GLOBAL_PROJECTIONS_LEDGER[newM] = { workingDays: 21, enrollTarget: 400, stateDemand: {}, weeks: [] };
     MASTER_STATE_LIST.forEach(s => { GLOBAL_PROJECTIONS_LEDGER[newM].stateDemand[s] = 0; });
 
     Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
         CLINICAL_EVALUATORS_ROSTER[name].ptoMap[newM] = 0;
+        CLINICAL_EVALUATORS_ROSTER[name].quotaMap[newM] = 4;
         CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[newM] = [...CLINICAL_EVALUATORS_ROSTER[name].profile];
     });
 
@@ -616,14 +853,18 @@ function archiveSpecificMonth(m) {
     ARCHIVED_LEDGER[m] = JSON.parse(JSON.stringify(GLOBAL_PROJECTIONS_LEDGER[m])); 
     
     Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
-        if (!ARCHIVED_ROSTER[name]) ARCHIVED_ROSTER[name] = { ptoMap: {}, monthlyToggles: {} };
+        if (!ARCHIVED_ROSTER[name]) ARCHIVED_ROSTER[name] = { ptoMap: {}, quotaMap: {}, monthlyToggles: {} };
         if (CLINICAL_EVALUATORS_ROSTER[name].ptoMap) {
             ARCHIVED_ROSTER[name].ptoMap[m] = CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m];
+        }
+        if (CLINICAL_EVALUATORS_ROSTER[name].quotaMap) {
+            ARCHIVED_ROSTER[name].quotaMap[m] = CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m];
         }
         if (CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles) {
             ARCHIVED_ROSTER[name].monthlyToggles[m] = JSON.parse(JSON.stringify(CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m]));
         }
         delete CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m];
+        delete CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m];
         delete CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m];
     });
     
@@ -643,28 +884,30 @@ function restoreArchivedMonth(m) {
         GLOBAL_PROJECTIONS_LEDGER[m] = JSON.parse(JSON.stringify(ARCHIVED_LEDGER[m]));
         delete ARCHIVED_LEDGER[m];
     } else {
-        GLOBAL_PROJECTIONS_LEDGER[m] = { workingDays: 21, enrollTarget: 400, stateDemand: {} };
+        GLOBAL_PROJECTIONS_LEDGER[m] = { workingDays: 21, enrollTarget: 400, stateDemand: {}, weeks: [] };
         MASTER_STATE_LIST.forEach(s => GLOBAL_PROJECTIONS_LEDGER[m].stateDemand[s] = 0);
     }
 
     Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
         if (ARCHIVED_ROSTER[name] && ARCHIVED_ROSTER[name].ptoMap[m] !== undefined) {
             CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m] = ARCHIVED_ROSTER[name].ptoMap[m];
+            CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m] = ARCHIVED_ROSTER[name].quotaMap[m] || 4;
             CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = ARCHIVED_ROSTER[name].monthlyToggles[m] || [...CLINICAL_EVALUATORS_ROSTER[name].profile];
             delete ARCHIVED_ROSTER[name].ptoMap[m];
+            delete ARCHIVED_ROSTER[name].quotaMap[m];
             delete ARCHIVED_ROSTER[name].monthlyToggles[m];
         } else {
             CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m] = 0;
+            CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m] = 4;
             CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = [...CLINICAL_EVALUATORS_ROSTER[name].profile];
         }
     });
 
-    activeSelectedMonthIdx = ACTIVE_HORIZON_TIMELINE.length - 1; // Focus on the newly restored month
+    activeSelectedMonthIdx = ACTIVE_HORIZON_TIMELINE.length - 1; 
     saveStateToStorage();
     renderMonthManagerUI();
     buildTimelineControls();
     recalculateDashboardMetrics();
-    // Refresh modal in case it's open
     if(document.getElementById('settings-modal').style.display === 'flex') populateGlobalModalViews(); 
 }
 
@@ -680,6 +923,7 @@ function deleteSpecificMonth(m) {
     Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
         if (CLINICAL_EVALUATORS_ROSTER[name]) {
             delete CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m];
+            delete CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m];
             delete CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m];
         }
     });
@@ -698,6 +942,7 @@ function deleteArchivedMonth(m) {
     Object.keys(ARCHIVED_ROSTER).forEach(name => {
         if(ARCHIVED_ROSTER[name]) {
             delete ARCHIVED_ROSTER[name].ptoMap[m];
+            delete ARCHIVED_ROSTER[name].quotaMap[m];
             delete ARCHIVED_ROSTER[name].monthlyToggles[m];
         }
     });
@@ -722,7 +967,6 @@ function buildTimelineControls() {
   });
 }
 
-// --- MODAL PARAMETERS LAYOUT POPULATION ---
 function toggleModalEnvelope(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
@@ -735,13 +979,13 @@ function toggleModalEnvelope(id) {
   }
 }
 
+// --- STREAMING_CHUNK:Global Settings Population... ---
 function populateGlobalModalViews() {
   const stateListInput = document.getElementById('modal-state-list-input');
   if(stateListInput) {
       stateListInput.value = MASTER_STATE_LIST.join(', ');
   }
 
-  // Working Days Table
   const wdTable = document.getElementById('modal-wd-table');
   if (wdTable) {
     let html = `<thead><tr><th style="border-right:1px solid #2d3548;">Metric</th>${ACTIVE_HORIZON_TIMELINE.map(m => `<th>${m.split('_')[0]}</th>`).join('')}</tr></thead><tbody>`;
@@ -753,19 +997,16 @@ function populateGlobalModalViews() {
     wdTable.innerHTML = html;
   }
 
-  // Demand & Targets Table
   const demandTable = document.getElementById('modal-demand-entry-table');
   if (demandTable) {
     let html = `<thead><tr><th style="border-right:1px solid #2d3548;">Territory / Metric</th>${ACTIVE_HORIZON_TIMELINE.map(m => `<th>${m.split('_')[0]}</th>`).join('')}</tr></thead><tbody>`;
     
-    // Row 0: Targets
     html += `<tr style="background:rgba(99,102,241,0.12);"><td style="border-right:1px solid #2d3548;"><strong>Enrollment Target</strong></td>`;
     ACTIVE_HORIZON_TIMELINE.forEach((m, cIdx) => {
         html += `<td><input type="number" class="paste-target" data-row="0" data-col="${cIdx}" id="mod-tgt-field-${m}" value="${GLOBAL_PROJECTIONS_LEDGER[m].enrollTarget}" style="color:#a5b4fc; font-weight:700;"></td>`;
     });
     html += `</tr>`;
     
-    // Rows 1+: States
     MASTER_STATE_LIST.forEach((s, rIdx) => {
       html += `<tr><td style="border-right:1px solid #2d3548;"><strong>${s} Demand Volume</strong></td>`;
       ACTIVE_HORIZON_TIMELINE.forEach((m, cIdx) => {
@@ -866,8 +1107,7 @@ function setVolMultiplier(val, btn) {
   recalculateDashboardMetrics();
 }
 
-// --- GOOGLE SHEETS CLOUD SYNC DAILY PARSER ENGINE WITH FAILSAFE UNDO ---
-
+// --- STREAMING_CHUNK:Google Sheets Sync Engine... ---
 function undoPtoSync() {
     let backupString = localStorage.getItem('wfm_roster_backup');
     if (backupString) {
@@ -875,16 +1115,17 @@ function undoPtoSync() {
         saveStateToStorage();
         recalculateDashboardMetrics();
         document.getElementById('undo-sync-btn').style.display = 'none';
-        alert("PTO Sync Undone! Your previous PTO values have been safely restored.");
+        alert("Sync Undone! Your previous metrics and state configurations have been safely restored.");
     }
 }
 
 async function syncPtoFromGoogleSheets(isSilent = false) {
   const btn = document.getElementById('sync-pto-btn');
   const undoBtn = document.getElementById('undo-sync-btn');
-  const originalText = btn.innerText;
+  let originalText = "☁️ CLOUD SYNC PTO FROM SHEETS";
+  if (btn) originalText = btn.innerText;
   
-  if (!isSilent) {
+  if (!isSilent && btn) {
       btn.innerText = "⏳ AGGREGATING DAILY ROWS...";
       btn.disabled = true;
   }
@@ -896,7 +1137,7 @@ async function syncPtoFromGoogleSheets(isSilent = false) {
     const csvText = await response.text();
     
     localStorage.setItem('wfm_roster_backup', JSON.stringify(CLINICAL_EVALUATORS_ROSTER));
-    if (!isSilent) undoBtn.style.display = 'inline-block';
+    if (!isSilent && undoBtn) undoBtn.style.display = 'inline-block';
     
     const parseCSVRow = (row) => {
         const result = [];
@@ -925,6 +1166,8 @@ async function syncPtoFromGoogleSheets(isSilent = false) {
     Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(ce => {
         ptoCounts[ce] = {};
         ACTIVE_HORIZON_TIMELINE.forEach(m => ptoCounts[ce][m] = 0);
+        // Wipe exactPto map entirely to prep for fresh, clean sheet load
+        CLINICAL_EVALUATORS_ROSTER[ce].exactPto = {};
     });
 
     let ceColMap = {}; 
@@ -971,17 +1214,21 @@ async function syncPtoFromGoogleSheets(isSilent = false) {
                 let monthName = ALL_KNOWN_MONTHS[parsedDate.getMonth()];
                 let timelineMonth = ACTIVE_HORIZON_TIMELINE.find(m => m.startsWith(monthName));
                 
-                if (timelineMonth) {
-                    Object.keys(ceColMap).forEach(cIdx => {
-                        let ceName = ceColMap[cIdx];
-                        let valStr = String(row[cIdx]).trim();
-                        let floatVal = parseFloat(valStr);
-                        
-                        if (!isNaN(floatVal) && floatVal > 0) {
+                // Store exact date string for Weekly view parsing (Format: YYYY-MM-DD local)
+                let dateKey = parsedDate.getFullYear() + '-' + String(parsedDate.getMonth()+1).padStart(2,'0') + '-' + String(parsedDate.getDate()).padStart(2,'0');
+
+                Object.keys(ceColMap).forEach(cIdx => {
+                    let ceName = ceColMap[cIdx];
+                    let valStr = String(row[cIdx]).trim();
+                    let floatVal = parseFloat(valStr);
+                    
+                    if (!isNaN(floatVal) && floatVal > 0) {
+                        if (timelineMonth) {
                             ptoCounts[ceName][timelineMonth] += floatVal;
                         }
-                    });
-                }
+                        CLINICAL_EVALUATORS_ROSTER[ceName].exactPto[dateKey] = (CLINICAL_EVALUATORS_ROSTER[ceName].exactPto[dateKey] || 0) + floatVal;
+                    }
+                });
             }
         }
     }
@@ -999,22 +1246,182 @@ async function syncPtoFromGoogleSheets(isSilent = false) {
     recalculateDashboardMetrics();
     
     if (!isSilent) {
-        alert(`Cloud Sync Complete!\nSuccessfully scanned and updated ${updatesCount} monthly PTO entries based on daily values.`);
+        alert(`Cloud PTO Sync Complete!\nSuccessfully scanned and updated ${updatesCount} monthly PTO entries and registered specific dates for Weekly Views.`);
     }
   } catch (err) {
     console.error("Error fetching or parsing CSV:", err);
     if (!isSilent) {
-        alert("Failed to sync: " + err.message);
+        alert("Failed to sync PTO: " + err.message + "\n\nPlease ensure your Google Sheet is published to the web.");
     }
   } finally {
-    if (!isSilent) {
+    if (!isSilent && btn) {
         btn.innerText = originalText;
         btn.disabled = false;
     }
   }
 }
 
-// --- ROSTER PROVISIONING LOGIC ---
+async function syncLicensureFromSheets(isSilent = false) {
+  const btns = document.querySelectorAll('button[onclick*="syncLicensureFromSheets"]');
+  const undoBtn = document.getElementById('undo-sync-btn');
+  let originalText = "🔄 SYNC LICENSURE";
+  
+  if (!isSilent && btns.length > 0) {
+      originalText = btns[0].innerText;
+      btns.forEach(b => { b.innerText = "⏳ SYNCING..."; b.disabled = true; });
+  }
+  
+  try {
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7J8oMveRBfBtVb2OxbyVXJg-bW7_DUQdN8fryo-56EmFqxhhICP24tUG7EL3UsxHMCsCil5WJqYz/pub?gid=748848576&single=true&output=csv&_cb=" + new Date().getTime();
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error("Network response error. Ensure the 'CE Active States' tab is Published to the Web.");
+    const csvText = await response.text();
+    
+    localStorage.setItem('wfm_roster_backup', JSON.stringify(CLINICAL_EVALUATORS_ROSTER));
+    if (!isSilent && undoBtn) undoBtn.style.display = 'inline-block';
+    
+    const parseCSVRow = (row) => {
+        const result = [];
+        let insideQuote = false;
+        let currentVal = '';
+        for (let i = 0; i < row.length; i++) {
+            if (row[i] === '"') {
+                insideQuote = !insideQuote;
+            } else if (row[i] === ',' && !insideQuote) {
+                result.push(currentVal);
+                currentVal = '';
+            } else {
+                currentVal += row[i];
+            }
+        }
+        result.push(currentVal);
+        return result;
+    };
+    
+    const rows = csvText.split(/\r\n|\n/).filter(r => r.trim());
+    if (rows.length < 2) throw new Error("CSV appears empty or malformed");
+    
+    const parsedData = rows.map(r => parseCSVRow(r));
+    
+    let headerRowIdx = -1;
+    let ceColIdx = -1;
+    let stateColMap = {};
+    
+    for(let r = 0; r < Math.min(10, parsedData.length); r++) {
+        let row = parsedData[r];
+        for (let c = 0; c < row.length; c++) {
+            let cellVal = String(row[c]).trim();
+            if (cellVal === "CE" || cellVal.includes("CE ")) {
+                let stateCount = 0;
+                for(let sc = 0; sc < row.length; sc++) {
+                    if(MASTER_STATE_LIST.includes(String(row[sc]).trim().toUpperCase())) stateCount++;
+                }
+                if(stateCount > 5) {
+                    headerRowIdx = r;
+                    ceColIdx = c;
+                    break;
+                }
+            }
+        }
+        if (headerRowIdx !== -1) {
+            for (let c = 0; c < row.length; c++) {
+                let cellVal = String(row[c]).trim().toUpperCase();
+                if (MASTER_STATE_LIST.includes(cellVal)) {
+                    stateColMap[cellVal] = c;
+                }
+            }
+            break;
+        }
+    }
+
+    if (headerRowIdx === -1 || ceColIdx === -1) {
+        throw new Error("Could not locate the 'CE' column header or State columns in the sheet.");
+    }
+
+    let updatesCount = 0;
+    
+    for (let r = headerRowIdx + 1; r < parsedData.length; r++) {
+        let row = parsedData[r];
+        if (!row) continue;
+
+        let ceName = String(row[ceColIdx]).trim();
+        if(!ceName) continue;
+
+        // Failsafe matching: Replace Unicode non-breaking spaces with normal spaces & collapse duplicates
+        let matchedCEName = Object.keys(CLINICAL_EVALUATORS_ROSTER).find(name => {
+            let cleanRosterName = name.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            let cleanSheetName = ceName.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            return cleanRosterName === cleanSheetName;
+        });
+        
+        if (matchedCEName) {
+            let rosterCE = CLINICAL_EVALUATORS_ROSTER[matchedCEName];
+            let oldProfile = rosterCE.profile || [];
+            let newProfile = [];
+            
+            Object.keys(stateColMap).forEach(state => {
+                let colIdx = stateColMap[state];
+                let cellVal = String(row[colIdx]).trim();
+                // Add explicit logic to capture "On" and "Yes" to handle the user's specific spreadsheet format
+                if (cellVal === 'Yes' || cellVal === 'Y' || cellVal.toLowerCase() === 'yes' || cellVal.toLowerCase() === 'on') {
+                    newProfile.push(state);
+                }
+            });
+            
+            let hasChanges = false;
+            if (oldProfile.length !== newProfile.length) hasChanges = true;
+            else {
+                oldProfile.forEach(s => { if (!newProfile.includes(s)) hasChanges = true; });
+            }
+            
+            if (hasChanges) {
+                let newlyAddedStates = newProfile.filter(s => !oldProfile.includes(s));
+                
+                rosterCE.profile = newProfile;
+                ACTIVE_HORIZON_TIMELINE.forEach(m => {
+                    let currentToggles = rosterCE.monthlyToggles[m] || [];
+                    currentToggles = currentToggles.filter(s => newProfile.includes(s));
+                    newlyAddedStates.forEach(s => {
+                        if (!currentToggles.includes(s)) currentToggles.push(s);
+                    });
+                    rosterCE.monthlyToggles[m] = currentToggles;
+                });
+                updatesCount++;
+            }
+        }
+    }
+    
+    saveStateToStorage();
+    recalculateDashboardMetrics();
+    
+    if (!isSilent) {
+        alert(`Licensure Sync Complete!\nSuccessfully mapped and updated ${updatesCount} CE profiles from Google Sheets.`);
+    }
+  } catch (err) {
+    console.error("Error fetching or parsing Licensure CSV:", err);
+    if (!isSilent) {
+        alert("Failed to sync licensure: " + err.message + "\n\nPlease ensure your Google Sheet is set to 'Anyone with the link can view' so the dashboard can read it.");
+    }
+  } finally {
+    if (!isSilent && btns.length > 0) {
+        btns.forEach(b => { b.innerText = originalText; b.disabled = false; });
+    }
+  }
+}
+
+// --- STREAMING_CHUNK:Roster Management & Toggling... ---
+function moveCE(name, dir) {
+    let idx = ROSTER_ORDER.indexOf(name);
+    if (idx < 0) return;
+    let target = idx + dir;
+    if (target < 0 || target >= ROSTER_ORDER.length) return;
+    let temp = ROSTER_ORDER[idx];
+    ROSTER_ORDER[idx] = ROSTER_ORDER[target];
+    ROSTER_ORDER[target] = temp;
+    saveStateToStorage();
+    recalculateDashboardMetrics();
+}
+
 function addNewClinicianToRoster() {
   const nameInput = document.getElementById('new-clinician-name');
   if (!nameInput) return;
@@ -1024,11 +1431,13 @@ function addNewClinicianToRoster() {
     alert("Resource entity entry already holds assignment constraints inside active tracking namespace registry.");
     return;
   }
-  CLINICAL_EVALUATORS_ROSTER[name] = { quota: 4, profile: [...MASTER_STATE_LIST], ptoMap: {}, monthlyToggles: {} };
+  CLINICAL_EVALUATORS_ROSTER[name] = { quotaMap: {}, exactPto: {}, profile: [...MASTER_STATE_LIST], ptoMap: {}, monthlyToggles: {} };
   ACTIVE_HORIZON_TIMELINE.forEach(m => {
     CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m] = 0;
+    CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m] = 4;
     CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = [...MASTER_STATE_LIST];
   });
+  ROSTER_ORDER.push(name);
   nameInput.value = '';
   saveStateToStorage();
   recalculateDashboardMetrics();
@@ -1037,6 +1446,21 @@ function addNewClinicianToRoster() {
 function deprovisionClinician(name) {
   if (!confirm(`Are you certain you wish to completely clear ${name} from deployment tracking rosters permanently?`)) return;
   delete CLINICAL_EVALUATORS_ROSTER[name];
+  ROSTER_ORDER = ROSTER_ORDER.filter(n => n !== name);
+  saveStateToStorage();
+  recalculateDashboardMetrics();
+}
+
+function removeLicenseFromProfile(name, state) {
+  if (!confirm(`Permanently remove ${state} license from ${name}'s master profile?`)) return;
+  if (!CLINICAL_EVALUATORS_ROSTER[name]) return;
+  
+  CLINICAL_EVALUATORS_ROSTER[name].profile = CLINICAL_EVALUATORS_ROSTER[name].profile.filter(s => s !== state);
+  ACTIVE_HORIZON_TIMELINE.forEach(m => {
+    if (CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles && CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m]) {
+      CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m].filter(s => s !== state);
+    }
+  });
   saveStateToStorage();
   recalculateDashboardMetrics();
 }
@@ -1054,6 +1478,28 @@ function updateMonthlyMixToggle(name, state, action) {
   }
   saveStateToStorage();
   recalculateDashboardMetrics();
+}
+
+function addLicenseToProfile(name) {
+  const inp = document.getElementById(`add-${name.replace(/\s/g, '')}`);
+  if(!inp) return;
+  const state = inp.value.toUpperCase().trim();
+  if (state && MASTER_STATE_LIST.includes(state)) {
+    if(!CLINICAL_EVALUATORS_ROSTER[name].profile) CLINICAL_EVALUATORS_ROSTER[name].profile = [];
+    if (!CLINICAL_EVALUATORS_ROSTER[name].profile.includes(state)) {
+      CLINICAL_EVALUATORS_ROSTER[name].profile.push(state);
+      ACTIVE_HORIZON_TIMELINE.forEach(m => {
+        if(!CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles) CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles = {};
+        if(!CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m]) CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m] = [];
+        if (!CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m].includes(state)) {
+          CLINICAL_EVALUATORS_ROSTER[name].monthlyToggles[m].push(state);
+        }
+      });
+      saveStateToStorage(); 
+      recalculateDashboardMetrics();
+    }
+  }
+  inp.value = '';
 }
 
 function addAllLicenses(name) {
@@ -1090,7 +1536,7 @@ function addAllStatesToAllProviders() {
   recalculateDashboardMetrics();
 }
 
-// --- REACTIONARY WFM PROCESSING AND ALLOCATION ALGORITHMS ---
+// --- STREAMING_CHUNK:Math Algorithms & Dashboard Re-renders... ---
 function recalculateDashboardMetrics() {
   try {
     let activeMonth = ACTIVE_HORIZON_TIMELINE[activeSelectedMonthIdx];
@@ -1102,7 +1548,8 @@ function recalculateDashboardMetrics() {
     let clinicianAllocations = Object.keys(CLINICAL_EVALUATORS_ROSTER).map(name => {
       let r = CLINICAL_EVALUATORS_ROSTER[name];
       let pto = parseFloat(r.ptoMap[activeMonth]) || 0;
-      let totalCapacity = Math.max(0, (wd - pto) * (parseFloat(r.quota) || 0));
+      let qta = parseFloat(r.quotaMap[activeMonth]) || 0;
+      let totalCapacity = Math.max(0, (wd - pto) * qta);
       
       let activeStatesThisMonth = r.monthlyToggles[activeMonth] || [];
       let totalDemandDenom = 0;
@@ -1111,7 +1558,7 @@ function recalculateDashboardMetrics() {
       });
 
       return {
-        name: name, quota: r.quota, pto: pto, capacity: totalCapacity, 
+        name: name, quota: qta, pto: pto, capacity: totalCapacity, 
         activeStates: activeStatesThisMonth, denom: totalDemandDenom, masterProfile: r.profile
       };
     });
@@ -1180,6 +1627,7 @@ function recalculateDashboardMetrics() {
     renderStateWeightedHeatmap(stateAllocations);
     renderExecutiveNarrativeBanner(systemTotalDemand, systemTotalWeightedSupply, activeMonth, targetEnrollment);
     renderPtoManagerGrid();
+    renderWeeklyVolatility();
     renderLongRangeWfmChart();
     renderSidebarProfileManager(clinicianAllocations);
 
@@ -1196,7 +1644,9 @@ function renderLicensureCrossMatrix(clinicianAllocations, stateAllocations) {
   headRow.innerHTML = `<th style="position:sticky; left:0; top:0; background:#1e2330; z-index:30; border-right:1px solid #2d3548; min-width:180px; border-bottom:1px solid #2d3548;">Clinical Evaluator Name</th><th style="position:sticky; top:0; left:180px; background:#1e2330; z-index:30; text-align:center; color:#a5b4fc; font-weight:bold; border-bottom:1px solid #2d3548; border-right:1px solid #2d3548;">Active/Total</th>` + 
     MASTER_STATE_LIST.map(s => `<th style="position:sticky; top:0; background:#1e2330; z-index:20; text-align:center; font-weight:bold; min-width:48px; border-bottom:1px solid #2d3548;">${s}</th>`).join('');
 
-  bodyRows.innerHTML = clinicianAllocations.map(ce => {
+  bodyRows.innerHTML = ROSTER_ORDER.map(name => {
+    let ce = clinicianAllocations.find(c => c.name === name);
+    if(!ce) return '';
     let countActiveOnStates = ce.activeStates.length;
     let stateCellsHtml = MASTER_STATE_LIST.map(s => {
       let holdsMasterLicense = ce.masterProfile.includes(s);
@@ -1206,7 +1656,7 @@ function renderLicensureCrossMatrix(clinicianAllocations, stateAllocations) {
       let isCurrentlyOn = ce.activeStates.includes(s);
       return `
         <td style="text-align:center; padding:3px; border-bottom: 1px solid #1a2030; background: ${isCurrentlyOn ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.05)'};">
-          <button class="matrix-btn ${isCurrentlyOn ? 'matrix-btn-on' : 'matrix-btn-off'}" onclick="updateMonthlyMixToggle('${ce.name}', '${s}', '${isCurrentlyOn ? 'Off' : 'On'}')">
+          <button class="matrix-btn ${isCurrentlyOn ? 'month-btn active' : 'matrix-btn-off'}" onclick="window.updateMonthlyMixToggle('${ce.name.replace(/'/g, "\\'")}', '${s}', '${isCurrentlyOn ? 'Off' : 'On'}')">
             ${isCurrentlyOn ? 'ON' : 'OFF'}
           </button>
         </td>
@@ -1218,7 +1668,7 @@ function renderLicensureCrossMatrix(clinicianAllocations, stateAllocations) {
         <td style="position:sticky; left:0; background:#1e2330; z-index:10; border-right:1px solid #2d3548;">
           <div style="display:flex; align-items:center; justify-content:space-between;">
             <span style="font-weight:700; color:#f1f5f9; font-size: 11px;">${ce.name}</span>
-            <button class="btn-remove" onclick="deprovisionClinician('${ce.name}')" title="Permanently drop this evaluator profile resource from structural infrastructure blocks">×</button>
+            <button class="btn-remove" onclick="window.deprovisionClinician('${ce.name.replace(/'/g, "\\'")}')" title="Permanently drop this evaluator profile resource from structural infrastructure blocks">×</button>
           </div>
           <div style="font-size: 8px; color: #64748b; line-height: 1.2; max-width: 170px; white-space: normal; margin-top:2px;">
             <strong>Licenses:</strong> ${MASTER_STATE_LIST.filter(s => ce.masterProfile.includes(s)).join(', ') || 'None'}
@@ -1243,32 +1693,44 @@ function renderLicensureCrossMatrix(clinicianAllocations, stateAllocations) {
 function renderSidebarProfileManager(clinicianAllocations) {
   const container = document.getElementById('ce-controls');
   if(!container) return;
-  container.innerHTML = clinicianAllocations.map(ce => `
+  container.innerHTML = ROSTER_ORDER.map(name => {
+    let ce = clinicianAllocations.find(c => c.name === name);
+    if(!ce) return '';
+    return `
     <div class="ce-row">
-      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px; align-items: center;">
         <strong>${ce.name}</strong> 
-        <span title="Denominator: Total demand of all active states." style="font-size:7px; color:#64748b; cursor:help;">Load: ${Math.round(ce.denom)}</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span title="Denominator: Total demand of all active states." style="font-size:7px; color:#64748b; cursor:help;">Load: ${Math.round(ce.denom)}</span>
+            <div style="display:flex; flex-direction:column; gap:1px;">
+                <button class="btn-action" style="padding:0 3px; font-size:6px; background:#334155; line-height:1;" onclick="window.moveCE('${ce.name.replace(/'/g, "\\'")}', -1)">▲</button>
+                <button class="btn-action" style="padding:0 3px; font-size:6px; background:#334155; line-height:1;" onclick="window.moveCE('${ce.name.replace(/'/g, "\\'")}', 1)">▼</button>
+            </div>
+        </div>
       </div>
       <div style="margin-bottom:6px;">
         ${MASTER_STATE_LIST.filter(s => ce.masterProfile.includes(s)).map(s => `
           <span class="state-pill-toggle ${ce.activeStates.includes(s) ? 'state-on' : 'state-off'}">
-            <span onclick="updateMonthlyMixToggle('${ce.name}','${s}', '${ce.activeStates.includes(s) ? 'Off' : 'On'}')">${s}</span>
-            <span class="del-btn" onclick="removeLicenseFromProfile('${ce.name}','${s}')" title="Permanently remove license">×</span>
+            <span onclick="window.updateMonthlyMixToggle('${ce.name.replace(/'/g, "\\'")}','${s}', '${ce.activeStates.includes(s) ? 'Off' : 'On'}')">${s}</span>
+            <span class="del-btn" onclick="event.stopPropagation(); window.removeLicenseFromProfile('${ce.name.replace(/'/g, "\\'")}','${s}')" title="Permanently remove license">×</span>
           </span>
         `).join('')}
       </div>
       <div style="display:flex; align-items:center; gap:4px;">
         <input type="text" placeholder="ST" style="width:40px;" id="add-${ce.name.replace(/\s/g, '')}">
-        <button class="btn-action" style="padding:2px 6px;" onclick="addLicenseToProfile('${ce.name}')" title="Add Single State">+</button>
-        <button class="btn-action" style="padding:2px 6px; background:#4f46e5;" onclick="addAllLicenses('${ce.name}')" title="Add All ${MASTER_STATE_LIST.length} States">+ ALL</button>
+        <button class="btn-action" style="padding:2px 6px;" onclick="window.addLicenseToProfile('${ce.name.replace(/'/g, "\\'")}')" title="Add Single State">+</button>
+        <button class="btn-action" style="padding:2px 6px; background:#4f46e5;" onclick="window.addAllLicenses('${ce.name.replace(/'/g, "\\'")}')" title="Add All ${MASTER_STATE_LIST.length} States">+ ALL</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function renderStateWeightedHeatmap(stateAllocations) {
   const heatmapBody = document.getElementById('heatmap-body');
   if (!heatmapBody) return;
+
+  let optCount = 0, hltCount = 0, wrnCount = 0, crtCount = 0;
+  let optStates = [], hltStates = [], wrnStates = [], crtStates = [];
 
   heatmapBody.innerHTML = MASTER_STATE_LIST.map(s => {
     let r = stateAllocations[s];
@@ -1279,6 +1741,13 @@ function renderStateWeightedHeatmap(stateAllocations) {
     let displayPct = r.demand > 0 ? `${Math.round(processingPercentage)}%` : '-';
     let barWidth = r.demand > 0 ? Math.min(100, processingPercentage) : 0;
     let barColor = processingPercentage < 80 ? '#ef4444' : (processingPercentage < 95 ? '#f59e0b' : '#22c55e');
+
+    if (r.demand > 0) {
+        if (processingPercentage >= 90) { optCount++; optStates.push(s); }
+        else if (processingPercentage >= 80) { hltCount++; hltStates.push(s); }
+        else if (processingPercentage >= 70) { wrnCount++; wrnStates.push(s); }
+        else { crtCount++; crtStates.push(s); }
+    }
 
     return `
       <tr>
@@ -1296,12 +1765,38 @@ function renderStateWeightedHeatmap(stateAllocations) {
         </td>
         <td>
           <div style="max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-            ${r.assigned.map(n => `<span class="provider-pill" onmouseover="linkTraceMarker('${n}')" onmouseout="clearTraceMarker()">${n.split(' ')[0]}</span>`).join('')}
+            ${r.assigned.map(n => `<span class="provider-pill" onmouseover="window.linkTraceMarker('${n.replace(/'/g, "\\'")}')" onmouseout="window.clearTraceMarker()">${n.split(' ')[0]}</span>`).join('')}
           </div>
         </td>
       </tr>
     `;
   }).join('');
+
+  const summaryContainer = document.getElementById('heatmap-summary');
+  if (summaryContainer) {
+      summaryContainer.innerHTML = `
+        <div class="summary-box box-opt">
+          <div class="val">${optCount}</div>
+          <div class="lbl">Optimal Phone Screen Cov (≥90%)</div>
+          <div class="tooltip-text" style="bottom:auto; top:110%;">${optStates.length ? optStates.join(', ') : 'None'}</div>
+        </div>
+        <div class="summary-box box-hlt">
+          <div class="val">${hltCount}</div>
+          <div class="lbl">Healthy Phone Screen Cov (80-89%)</div>
+          <div class="tooltip-text" style="bottom:auto; top:110%;">${hltStates.length ? hltStates.join(', ') : 'None'}</div>
+        </div>
+        <div class="summary-box box-wrn">
+          <div class="val">${wrnCount}</div>
+          <div class="lbl">Warning Phone Screen Cov (70-79%)</div>
+          <div class="tooltip-text" style="bottom:auto; top:110%;">${wrnStates.length ? wrnStates.join(', ') : 'None'}</div>
+        </div>
+        <div class="summary-box box-crt">
+          <div class="val">${crtCount}</div>
+          <div class="lbl">Critical Phone Screen Cov (<70%)</div>
+          <div class="tooltip-text" style="bottom:auto; top:110%;">${crtStates.length ? crtStates.join(', ') : 'None'}</div>
+        </div>
+      `;
+  }
 }
 
 function renderExecutiveNarrativeBanner(totalDemand, totalSupply, activeMonth, targetEnrollment) {
@@ -1331,26 +1826,29 @@ function renderPtoManagerGrid() {
   const body = document.getElementById('pto-ledger-body');
   const foot = document.getElementById('pto-ledger-foot');
 
-  let headHtml = `<tr><th rowspan="2" style="position:sticky; left:0; background:#1e2330; z-index:2; border-right:1px solid #2d3548; min-width:140px;">Clinical Evaluator</th><th rowspan="2" style="width:50px; text-align:center;">Daily Quota</th>`;
+  let headHtml = `<tr><th rowspan="2" style="position:sticky; left:0; background:#1e2330; z-index:2; border-right:1px solid #2d3548; min-width:140px;">Clinical Evaluator</th>`;
   ACTIVE_HORIZON_TIMELINE.forEach(m => {
-    headHtml += `<th colspan="2" class="pto-grid-header">${m.split('_')[0]}</th>`;
+    headHtml += `<th colspan="3" class="pto-grid-header" style="text-align:center; border-left:1px solid #2d3548;">${m.split('_')[0]}</th>`;
   });
   headHtml += `</tr><tr>`;
   ACTIVE_HORIZON_TIMELINE.forEach(() => {
-    headHtml += `<th class="sub-head">PTO</th><th class="sub-head">CAP</th>`;
+    headHtml += `<th class="sub-head" style="border-left:1px solid #2d3548; text-align:center;">PTO</th><th class="sub-head" style="text-align:center;">QTA</th><th class="sub-head" style="text-align:center;">CAP</th>`;
   });
   headHtml += `</tr>`;
   thead.innerHTML = headHtml;
 
-  body.innerHTML = Object.keys(CLINICAL_EVALUATORS_ROSTER).map(name => {
+  body.innerHTML = ROSTER_ORDER.map(name => {
     let r = CLINICAL_EVALUATORS_ROSTER[name];
+    if(!r) return '';
     let columnsHtml = ACTIVE_HORIZON_TIMELINE.map((m) => {
       let ptoValue = r.ptoMap[m] !== undefined ? r.ptoMap[m] : 0;
+      let qtaValue = r.quotaMap[m] !== undefined ? r.quotaMap[m] : 4;
       let monthWd = GLOBAL_PROJECTIONS_LEDGER[m].workingDays;
-      let calculatedCapacity = Math.max(0, (monthWd - ptoValue) * (parseFloat(r.quota) || 0));
+      let calculatedCapacity = Math.max(0, (monthWd - ptoValue) * (parseFloat(qtaValue) || 0));
 
       return `
-        <td><input type="number" step="0.5" value="${ptoValue}" style="width:34px;" onchange="updateClinicianPtoValue('${name}', '${m}', this.value)"></td>
+        <td style="border-left:1px solid #2d3548; text-align:center;"><input type="number" step="0.5" value="${ptoValue}" style="width:34px;" onchange="window.updateClinicianPtoValue('${name.replace(/'/g, "\\'")}', '${m}', this.value)"></td>
+        <td style="text-align:center;"><input type="number" step="0.5" value="${qtaValue}" style="width:34px; color:#6366f1;" onchange="window.updateClinicianBaseQuota('${name.replace(/'/g, "\\'")}', '${m}', this.value)"></td>
         <td class="cap-cell">${Math.round(calculatedCapacity)}</td>
       `;
     }).join('');
@@ -1360,13 +1858,12 @@ function renderPtoManagerGrid() {
         <td style="position:sticky; left:0; background:#1e2330; z-index:1; border-right:1px solid #2d3548;">
           <strong style="color:#f1f5f9;">${name}</strong>
         </td>
-        <td style="text-align:center;"><input type="number" value="${r.quota}" style="width:34px; font-weight:bold; color:#6366f1;" onchange="updateClinicianBaseQuota('${name}', this.value)"></td>
         ${columnsHtml}
       </tr>
     `;
   }).join('');
 
-  let totalsHtml = `<tr class="totals-row"><td style="position:sticky; left:0; background:#0f1117; z-index:2; border-right:1px solid #2d3548;">AGGREGATE SUMS</td><td style="text-align:center;">—</td>`;
+  let totalsHtml = `<tr class="totals-row"><td style="position:sticky; left:0; background:#0f1117; z-index:2; border-right:1px solid #2d3548;">AGGREGATE SUMS</td>`;
   ACTIVE_HORIZON_TIMELINE.forEach(m => {
     let monthWd = GLOBAL_PROJECTIONS_LEDGER[m].workingDays;
     let aggregatePtoDaysSum = 0;
@@ -1374,13 +1871,14 @@ function renderPtoManagerGrid() {
 
     Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
       let ptoValue = parseFloat(CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m]) || 0;
-      let quotaValue = parseFloat(CLINICAL_EVALUATORS_ROSTER[name].quota) || 0;
+      let quotaValue = parseFloat(CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m]) || 0;
       aggregatePtoDaysSum += ptoValue;
       aggregateSlotsCapacitySum += Math.max(0, (monthWd - ptoValue) * quotaValue);
     });
 
     totalsHtml += `
-      <td style="text-align:center; color:#f87171;">${aggregatePtoDaysSum}</td>
+      <td style="text-align:center; color:#f87171; border-left:1px solid #2d3548;">${aggregatePtoDaysSum}</td>
+      <td style="text-align:center; color:#64748b;">-</td>
       <td class="cap-cell" style="color:#4ade80; background:rgba(34,197,94,0.1);">${Math.round(aggregateSlotsCapacitySum)}</td>
     `;
   });
@@ -1394,11 +1892,108 @@ function updateClinicianPtoValue(name, month, value) {
   recalculateDashboardMetrics();
 }
 
-function updateClinicianBaseQuota(name, value) {
-  CLINICAL_EVALUATORS_ROSTER[name].quota = parseFloat(value) || 0;
+function updateClinicianBaseQuota(name, month, value) {
+  CLINICAL_EVALUATORS_ROSTER[name].quotaMap[month] = parseFloat(value) || 0;
   saveStateToStorage();
   recalculateDashboardMetrics();
 }
+
+// --- STREAMING_CHUNK:Weekly Capacity Volatility Engine... ---
+function renderWeeklyVolatility() {
+    let activeMonth = ACTIVE_HORIZON_TIMELINE[activeSelectedMonthIdx];
+    if (!GLOBAL_PROJECTIONS_LEDGER[activeMonth].weeks || GLOBAL_PROJECTIONS_LEDGER[activeMonth].weeks.length === 0) {
+        GLOBAL_PROJECTIONS_LEDGER[activeMonth].weeks = [
+            {label: "Week 1", start: "", end: ""},
+            {label: "Week 2", start: "", end: ""},
+            {label: "Week 3", start: "", end: ""},
+            {label: "Week 4", start: "", end: ""},
+            {label: "Week 5", start: "", end: ""}
+        ];
+    }
+    let weeks = GLOBAL_PROJECTIONS_LEDGER[activeMonth].weeks;
+
+    let container = document.getElementById('weekly-dates-container');
+    if (container) {
+        container.innerHTML = weeks.map((w, i) => `
+            <div style="background:#1a2030; padding:6px; border-radius:4px; border:1px solid #2d3548; font-size:9px;">
+                <div style="color:#a5b4fc; margin-bottom:4px; font-weight:bold; font-size:10px;">${w.label}</div>
+                <span style="color:#64748b;">Start:</span> <input type="date" value="${w.start}" id="wk-s-${i}" style="width:105px; margin-bottom:4px;"><br>
+                <span style="color:#64748b;">End:</span> &nbsp;&nbsp;<input type="date" value="${w.end}" id="wk-e-${i}" style="width:105px;">
+            </div>
+        `).join('');
+    }
+
+    let thead = document.getElementById('weekly-cap-head');
+    let tbody = document.getElementById('weekly-cap-body');
+    let tfoot = document.getElementById('weekly-cap-foot');
+    
+    if(thead) {
+        thead.innerHTML = `<tr><th style="position:sticky; left:0; background:#1e2330; z-index:2; min-width:140px; border-right:1px solid #2d3548;">Clinical Evaluator</th>` + 
+            weeks.map(w => `<th style="text-align:center;">${w.label} CAP</th>`).join('') + `</tr>`;
+    }
+
+    let weeklyTotals = [0, 0, 0, 0, 0];
+
+    if(tbody) {
+        tbody.innerHTML = ROSTER_ORDER.map(name => {
+            let r = CLINICAL_EVALUATORS_ROSTER[name];
+            if(!r) return '';
+            let quota = parseFloat(r.quotaMap[activeMonth]) || 0;
+            
+            let cells = weeks.map((w, i) => {
+                if(!w.start || !w.end) return `<td style="text-align:center; color:#64748b;">-</td>`;
+                
+                let startD = new Date(w.start + 'T00:00:00');
+                let endD = new Date(w.end + 'T23:59:59');
+                let daysInWeek = 0;
+                
+                let curr = new Date(startD);
+                while(curr <= endD) {
+                    let day = curr.getDay();
+                    if(day !== 0 && day !== 6) daysInWeek++; // count weekdays natively
+                    curr.setDate(curr.getDate() + 1);
+                }
+
+                let ptoInWeek = 0;
+                Object.keys(r.exactPto || {}).forEach(dKey => {
+                    // dKey is formatted YYYY-MM-DD
+                    let pDate = new Date(dKey + 'T00:00:00');
+                    if (pDate >= startD && pDate <= endD) {
+                        ptoInWeek += r.exactPto[dKey];
+                    }
+                });
+
+                let weekCap = Math.max(0, (daysInWeek - ptoInWeek) * quota);
+                weeklyTotals[i] += weekCap;
+                return `<td style="text-align:center; font-weight:bold; color:#4ade80;">${Math.round(weekCap)}</td>`;
+            }).join('');
+
+            return `<tr><td style="position:sticky; left:0; background:#1e2330; z-index:1; border-right:1px solid #2d3548;"><strong>${name}</strong></td>${cells}</tr>`;
+        }).join('');
+    }
+
+    if(tfoot) {
+        tfoot.innerHTML = `<tr class="totals-row"><td style="position:sticky; left:0; background:#0f1117; z-index:2; border-right:1px solid #2d3548; color:#93c5fd;">WEEKLY SYSTEM TOTALS</td>` +
+            weeks.map((w, i) => `<td class="cap-cell" style="color:#4ade80; background:rgba(34,197,94,0.1);">${Math.round(weeklyTotals[i])}</td>`).join('') + `</tr>`;
+    }
+}
+
+function saveWeeklyDates() {
+    let activeMonth = ACTIVE_HORIZON_TIMELINE[activeSelectedMonthIdx];
+    let weeks = GLOBAL_PROJECTIONS_LEDGER[activeMonth].weeks || [];
+    for(let i=0; i<5; i++) {
+        let sEl = document.getElementById(`wk-s-${i}`);
+        let eEl = document.getElementById(`wk-e-${i}`);
+        if(!weeks[i]) weeks[i] = {label: `Week ${i+1}`};
+        weeks[i].start = sEl ? sEl.value : "";
+        weeks[i].end = eEl ? eEl.value : "";
+    }
+    GLOBAL_PROJECTIONS_LEDGER[activeMonth].weeks = weeks;
+    saveStateToStorage();
+    recalculateDashboardMetrics();
+    alert("Weekly Date ranges successfully saved to Ledger!");
+}
+
 
 function renderLongRangeWfmChart() {
   try {
@@ -1420,7 +2015,7 @@ function renderLongRangeWfmChart() {
       let supplySum = 0;
       Object.keys(CLINICAL_EVALUATORS_ROSTER).forEach(name => {
         let pto = parseFloat(CLINICAL_EVALUATORS_ROSTER[name].ptoMap[m]) || 0;
-        let quota = parseFloat(CLINICAL_EVALUATORS_ROSTER[name].quota) || 0;
+        let quota = parseFloat(CLINICAL_EVALUATORS_ROSTER[name].quotaMap[m]) || 0;
         supplySum += Math.max(0, (monthWd - pto) * quota);
       });
       aggregateSupplyPoints.push(Math.round(supplySum));
@@ -1511,15 +2106,43 @@ function SafeSetter(id, val) {
   if (el) el.innerText = val;
 }
 
+// --- GLOBALLY HOIST EXPORTS FOR IFRAME COMPATIBILITY ---
+window.removeLicenseFromProfile = removeLicenseFromProfile;
+window.updateMonthlyMixToggle = updateMonthlyMixToggle;
+window.addAllStatesToAllProviders = addAllStatesToAllProviders;
+window.syncLicensureFromSheets = syncLicensureFromSheets;
+window.addNewClinicianToRoster = addNewClinicianToRoster;
+window.deprovisionClinician = deprovisionClinician;
+window.openMonthManager = openMonthManager;
+window.moveMonth = moveMonth;
+window.addNewSpecificMonth = addNewSpecificMonth;
+window.archiveSpecificMonth = archiveSpecificMonth;
+window.restoreArchivedMonth = restoreArchivedMonth;
+window.deleteSpecificMonth = deleteSpecificMonth;
+window.deleteArchivedMonth = deleteArchivedMonth;
+window.toggleModalEnvelope = toggleModalEnvelope;
+window.saveGlobalModalParams = saveGlobalModalParams;
+window.updateMasterStateList = updateMasterStateList;
+window.updateClinicianPtoValue = updateClinicianPtoValue;
+window.updateClinicianBaseQuota = updateClinicianBaseQuota;
+window.syncPtoFromGoogleSheets = syncPtoFromGoogleSheets;
+window.undoPtoSync = undoPtoSync;
+window.setVolMultiplier = setVolMultiplier;
+window.addLicenseToProfile = addLicenseToProfile;
+window.addAllLicenses = addAllLicenses;
+window.linkTraceMarker = linkTraceMarker;
+window.clearTraceMarker = clearTraceMarker;
+window.runAutoOptimize = runAutoOptimize;
+window.moveCE = moveCE;
+window.copyMatrixToClipboard = copyMatrixToClipboard;
+window.saveWeeklyDates = saveWeeklyDates;
+
+// --- BOOTSTRAP INITIALIZATION ---
 window.onload = () => {
   bootstrapDataEngine();
   buildTimelineControls();
   recalculateDashboardMetrics();
   
-  initFirebase();
-  syncWithFirebase();
-  
-  // Safely check if we are outside an iframe without triggering cross-origin security errors
   let isStandalone = false;
   try {
     isStandalone = (window.self === window.top);
@@ -1527,8 +2150,15 @@ window.onload = () => {
     isStandalone = false; 
   }
 
+  initFirebase();
+  
   if (isStandalone) {
-    syncPtoFromGoogleSheets(true);
+    // Run syncs sequentially but independently so one failure doesn't block the other
+    syncPtoFromGoogleSheets(true)
+      .catch(err => console.warn("Auto PTO sync skipped/failed:", err))
+      .finally(() => {
+        syncLicensureFromSheets(true).catch(err => console.warn("Auto Licensure sync skipped/failed:", err));
+      });
   }
 };
 </script>
